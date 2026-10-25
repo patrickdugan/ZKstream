@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+# job directories hold inputs, proofs and state; keep them out of the repo
+jobs/
+state.json
+*.cmp.bin
+*.proof

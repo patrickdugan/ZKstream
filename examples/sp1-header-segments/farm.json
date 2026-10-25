@@ -1,0 +1,45 @@
+{
+  "_comment": "Example: SP1 header-chain segments proven by a laptop WSL worker and a Linux VPS, verified proofs collected on the VPS. Replace hosts, keys, paths and the expected vkey.",
+  "jobs_dir": ".",
+  "input_glob": "*.lch1",
+  "output_suffix": ".cmp.bin",
+  "max_attempts": 2,
+  "poll_seconds": 10,
+  "identity": {
+    "command": "/opt/zks/build/chain-sp1/host/target/release/chain-identity",
+    "expect": "candidate_vkey=0x<PINNED SEGMENT VKEY>"
+  },
+  "verify_expect": "status=ltc_h1_segment_compressed_proof_verified",
+  "workers": [
+    {
+      "name": "laptop",
+      "kind": "wsl",
+      "distro": "Ubuntu-24.04",
+      "user": "root",
+      "workdir": "/opt/zks/jobs",
+      "order": "reverse",
+      "launcher": "systemd-run",
+      "env": {"HOME": "/root"},
+      "prove": "export PATH=$HOME/.sp1/bin:$HOME/.cargo/bin:$PATH; LIGHTO_ENABLE_EXPENSIVE_PROVING=1 /usr/bin/time -v -o {output}.time /opt/zks/build/chain-sp1/host/target/release/chain-prove {input} {output}",
+      "verify": "/opt/zks/build/chain-sp1/host/target/release/chain-verify {input} {output} /opt/zks/segment-vkey.txt"
+    },
+    {
+      "name": "vps",
+      "kind": "ssh",
+      "host": "user@vps.example",
+      "key": "~/.ssh/vps_key",
+      "workdir": "/srv/zks/jobs",
+      "order": "forward",
+      "prove": "LIGHTO_ENABLE_EXPENSIVE_PROVING=1 /srv/zks/kit/zkstream/capped-run.sh 22G 0 -- /srv/zks/build/chain-sp1/host/target/release/chain-prove {input} {output}",
+      "verify": "/srv/zks/build/chain-sp1/host/target/release/chain-verify {input} {output} /srv/zks/segment-vkey.txt"
+    }
+  ],
+  "sink": {
+    "name": "collector",
+    "kind": "ssh",
+    "host": "user@vps.example",
+    "key": "~/.ssh/vps_key",
+    "workdir": "/srv/zks/proofs"
+  },
+  "sink_extra_inputs": [".end"]
+}
